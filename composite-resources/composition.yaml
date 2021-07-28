@@ -23,5 +23,5 @@ spec:
         - fromFieldPath: spec.id
           toFieldPath: spec.clusterRef.id # Notice here  (== parnet spec.id)
 
-        - fromFieldPath: spec.region
+        - fromFieldPath: spec.parameters.region
           toFieldPath: spec.parameters.region
