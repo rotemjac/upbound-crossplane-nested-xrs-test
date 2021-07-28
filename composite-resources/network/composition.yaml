@@ -1,0 +1,225 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: compositenetworks.aws.platformref.crossplane.io
+  labels:
+    provider: aws
+spec:
+  #writeConnectionSecretsToNamespace: upbound-system
+  compositeTypeRef:
+    apiVersion: aws.platformref.crossplane.io/v1alpha1
+    kind: CompositeNetwork
+  resources:
+
+    ### VPC ###
+    - base:
+        apiVersion: ec2.aws.crossplane.io/v1beta1
+        kind: VPC
+        spec:
+          forProvider:
+            cidrBlock: 192.168.0.0/16
+            enableDnsSupport: true
+            enableDnsHostNames: true
+      patches:
+        - fromFieldPath: spec.id
+          toFieldPath: metadata.labels[networks.aws.platformref.crossplane.io/network-id]
+
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: spec.forProvider.region
+    ### Internet Gateway ###
+    - base:
+        apiVersion: ec2.aws.crossplane.io/v1beta1
+        kind: InternetGateway
+        spec:
+          forProvider:
+            vpcIdSelector:
+              matchControllerRef: true
+      patches:
+        - fromFieldPath: spec.id
+          toFieldPath: metadata.labels[networks.aws.platformref.crossplane.io/network-id]
+
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: spec.forProvider.region
+
+      ### Subnet A ###
+    - base:
+        apiVersion: ec2.aws.crossplane.io/v1beta1
+        kind: Subnet
+        metadata:
+          labels:
+            zone: a
+            access: public # TODO: Receive from outside
+        spec:
+          forProvider:
+            mapPublicIPOnLaunch: true
+            cidrBlock: 192.168.0.0/18
+            vpcIdSelector:
+              matchControllerRef: true
+            tags:
+              - value: shared
+                key: ""
+              - key: kubernetes.io/role/elb
+              #- key: kubernetes.io/role/internal-elb
+                value: "1"
+      patches:
+        - fromFieldPath: spec.id
+          toFieldPath: metadata.labels[networks.aws.platformref.crossplane.io/network-id]
+
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: spec.forProvider.region
+
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: spec.forProvider.availabilityZone
+          transforms:
+            - type: string
+              string:
+                fmt: "%sa"
+
+        - fromFieldPath: spec.clusterRef.id # Notice! We're referring the cluster.id here!
+          toFieldPath: spec.forProvider.tags[0].key
+          transforms:
+            - type: string
+              string:
+                fmt: "kubernetes.io/cluster/%s"
+
+      ### Subnet B ###
+    - base:
+        apiVersion: ec2.aws.crossplane.io/v1beta1
+        kind: Subnet
+        metadata:
+          labels:
+            zone: b
+            access: public # TODO: Receive from outside
+        spec:
+          forProvider:
+            mapPublicIPOnLaunch: true
+            cidrBlock: 192.168.64.0/18
+            vpcIdSelector:
+              matchControllerRef: true
+            tags:
+              - value: shared
+                key: ""
+              - key: kubernetes.io/role/elb
+                #- key: kubernetes.io/role/internal-elb
+                value: "1"
+      patches:
+        - fromFieldPath: spec.id
+          toFieldPath: metadata.labels[networks.aws.platformref.crossplane.io/network-id]
+
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: spec.forProvider.region
+
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: spec.forProvider.availabilityZone
+          transforms:
+            - type: string
+              string:
+                fmt: "%sb"
+
+        - fromFieldPath: spec.clusterRef.id # Notice! We're referring the cluster.id here!
+          toFieldPath: spec.forProvider.tags[0].key
+          transforms:
+            - type: string
+              string:
+                fmt: "kubernetes.io/cluster/%s"
+
+      ### Subnet C ###
+    - base:
+        apiVersion: ec2.aws.crossplane.io/v1beta1
+        kind: Subnet
+        metadata:
+          labels:
+            zone: c
+            access: public # TODO: Receive from outside
+        spec:
+          forProvider:
+            mapPublicIPOnLaunch: true
+            cidrBlock: 192.168.128.0/18
+            vpcIdSelector:
+              matchControllerRef: true
+            tags:
+              - value: shared
+                key: ""
+              - key: kubernetes.io/role/elb
+                #- key: kubernetes.io/role/internal-elb
+                value: "1"
+      patches:
+        - fromFieldPath: spec.id
+          toFieldPath: metadata.labels[networks.aws.platformref.crossplane.io/network-id]
+
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: spec.forProvider.region
+
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: spec.forProvider.availabilityZone
+          transforms:
+            - type: string
+              string:
+                fmt: "%sc"
+
+        - fromFieldPath: spec.clusterRef.id # Notice! We're referring the cluster.id here!
+          toFieldPath: spec.forProvider.tags[0].key
+          transforms:
+            - type: string
+              string:
+                fmt: "kubernetes.io/cluster/%s"
+
+      ### Route Table ###
+    - base:
+        apiVersion: ec2.aws.crossplane.io/v1alpha4
+        kind: RouteTable
+        spec:
+          forProvider:
+            vpcIdSelector:
+              matchControllerRef: true
+            routes:
+              - destinationCidrBlock: 0.0.0.0/0
+                gatewayIdSelector:
+                  matchControllerRef: true
+            associations:
+              - subnetIdSelector:
+                  matchControllerRef: true
+                  matchLabels:
+                    zone: a
+                    access: public
+              - subnetIdSelector:
+                  matchControllerRef: true
+                  matchLabels:
+                    zone: b
+                    access: public
+
+              - subnetIdSelector:
+                  matchControllerRef: true
+                  matchLabels:
+                    zone: c
+                    access: public
+
+      patches:
+        - fromFieldPath: spec.id
+          toFieldPath: metadata.labels[networks.aws.platformref.crossplane.io/network-id]
+
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: spec.forProvider.region
+
+      ### Security Group - leave for now ###
+    #- base:
+    #    apiVersion: ec2.aws.crossplane.io/v1beta1
+    #    kind: SecurityGroup
+    #    spec:
+    #      forProvider:
+    #        vpcIdSelector:
+    #          matchControllerRef: true
+    #        groupName: platform-ref-aws-cluster
+    #        description: Allow access to PostgreSQL
+    #        ingress:
+    #          - fromPort: 5432
+    #            toPort: 5432
+    #            ipProtocol: tcp
+    #            ipRanges:
+    #              - cidrIp: 0.0.0.0/0
+    #                description: Everywhere
+    #  patches:
+    #    - fromFieldPath: spec.id
+    #      toFieldPath: metadata.labels[networks.aws.platformref.crossplane.io/network-id]
+    #    - fromFieldPath: "spec.parameters.region"
+    #      toFieldPath: spec.forProvider.region

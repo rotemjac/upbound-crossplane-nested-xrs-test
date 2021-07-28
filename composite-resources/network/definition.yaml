@@ -1,0 +1,61 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: compositenetworks.aws.platformref.crossplane.io
+spec:
+  group: aws.platformref.crossplane.io
+  names:
+    kind: CompositeNetwork
+    plural: compositenetworks
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+
+                ###
+                namespace:
+                  type: string
+                  description: Namespace to save secrets to.
+
+                ###
+                id:
+                  type: string
+                  description: ID of this Network that other objects will use to refer to it.
+
+                ###
+                clusterRef:
+                  type: object
+                  description: "A reference to the Cluster object that this network will be used for."
+                  properties:
+                    id:
+                      type: string
+                      description: ID of the Cluster object this ref points to.
+                  required:
+                    - id
+
+                ###
+                parameters:
+                  type: object
+                  description: VPC configuration parameters.
+                  properties:
+
+                    region:
+                      type: string
+                      description: VPC region
+                      enum: ["us-east-1","us-east-2","eu-west-1"]
+
+                  required:
+                    - region
+
+              required:
+                - namespace
+                - id
+                - clusterRef
+                - parameters

@@ -1,0 +1,27 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: cwpcompositeclusters.aws.platformref.crossplane.io
+spec:
+  #writeConnectionSecretsToNamespace: upbound-system
+  compositeTypeRef:
+    apiVersion: aws.platformref.crossplane.io/v1alpha1
+    kind: CwpCompositeCluster
+
+  resources:
+
+    - base:
+        apiVersion: aws.platformref.crossplane.io/v1alpha1
+        kind: CompositeNetwork
+      patches:
+        - fromFieldPath: spec.namespace
+          toFieldPath: spec.namespace
+
+        - fromFieldPath: spec.id
+          toFieldPath: spec.id
+
+        - fromFieldPath: spec.id
+          toFieldPath: spec.clusterRef.id # Notice here  (== parnet spec.id)
+
+        - fromFieldPath: spec.region
+          toFieldPath: spec.parameters.region

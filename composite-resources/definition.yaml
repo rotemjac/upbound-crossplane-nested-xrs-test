@@ -1,0 +1,44 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: cwpcompositeclusters.aws.platformref.crossplane.io
+spec:
+  claimNames:
+    kind: CwpCluster
+    plural: cwpclusters
+  connectionSecretKeys:
+    - kubeconfig
+  group: aws.platformref.crossplane.io
+  names:
+    kind: CwpCompositeCluster
+    plural: cwpcompositeclusters
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: ID of this Cluster that other objects will use to refer to it.
+                namespace:
+                  type: string
+                  description: Namespace of this Cluster were secrets will be saved to.
+                parameters:
+                  type: object
+                  description: Cluster configuration parameters.
+                  properties:
+                    region:
+                      type: string
+                      description: The cluster region.
+                      enum: ["us-east-1","us-east-2","eu-west-1"]
+                  required:
+                    - region
+              required:
+                - id
+                - namespa ce
