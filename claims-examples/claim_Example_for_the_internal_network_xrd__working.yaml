@@ -1,0 +1,15 @@
+apiVersion: aws.platformref.crossplane.io/v1alpha1
+kind: CompositeNetwork
+metadata:
+  name: my-network-claim-1
+spec:
+  id: network-claim-1
+  namespace: cluster-1-ns
+  clusterRef:
+    id: network-claim-1
+  parameters:
+    region: eu-west-1
+
+  writeConnectionSecretToRef:
+    name: cluster-1-secret
+    namespace: cluster-1-ns
